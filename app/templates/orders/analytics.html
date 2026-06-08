@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% block title %}Seller Analytics — TaskHub{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold mb-0">Seller Analytics</h3>
+  <a href="{{ url_for('orders.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+  </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small mb-1">Total Earned</div>
+      <div class="fs-4 fw-bold text-success">₹{{ "%.0f"|format(total_earned) }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small mb-1">Total Orders</div>
+      <div class="fs-4 fw-bold">{{ total_orders }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small mb-1">Completion Rate</div>
+      <div class="fs-4 fw-bold text-primary">{{ completion_rate }}%</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small mb-1">Disputes</div>
+      <div class="fs-4 fw-bold text-danger">{{ disputed }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Earnings Chart -->
+  <div class="col-md-8">
+    <div class="card p-4">
+      <h6 class="fw-bold mb-3">Earnings Over Time</h6>
+      {% if earnings_by_day %}
+      <canvas id="earningsChart" height="100"></canvas>
+      {% else %}
+      <div class="text-center py-4 text-muted">
+        <i class="bi bi-bar-chart fs-1 d-block mb-2 opacity-25"></i>
+        <p>No completed orders yet.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Order Status Donut -->
+  <div class="col-md-4">
+    <div class="card p-4">
+      <h6 class="fw-bold mb-3">Order Status</h6>
+      {% if total_orders > 0 %}
+      <canvas id="statusChart" height="200"></canvas>
+      {% else %}
+      <div class="text-center py-4 text-muted">
+        <i class="bi bi-pie-chart fs-1 d-block mb-2 opacity-25"></i>
+        <p>No orders yet.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Top Gigs -->
+{% if top_gigs %}
+<div class="card p-4 mb-4">
+  <h6 class="fw-bold mb-3">Top Gigs by Orders</h6>
+  <div class="table-responsive">
+    <table class="table table-borderless mb-0">
+      <thead class="text-muted small">
+        <tr><th>Gig</th><th>Orders</th><th>Earnings</th><th>Performance</th></tr>
+      </thead>
+      <tbody>
+        {% for gig_title, count in top_gigs %}
+        <tr>
+          <td class="fw-semibold small">{{ gig_title[:45] }}{% if gig_title|length > 45 %}...{% endif %}</td>
+          <td class="small">{{ count }}</td>
+          <td class="small text-success fw-semibold">₹{{ "%.0f"|format(gig_earnings.get(gig_title, 0)) }}</td>
+          <td style="width:200px;">
+            <div class="progress" style="height:6px;">
+              <div class="progress-bar" style="width:{{ (count / top_gigs[0][1] * 100)|int }}%;background:#6C63FF;"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent Orders Table -->
+<div class="card p-4">
+  <h6 class="fw-bold mb-3">Recent Orders</h6>
+  {% if selling %}
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light text-muted small">
+        <tr><th>#</th><th>Gig</th><th>Buyer</th><th>Amount</th><th>Status</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        {% for order in selling|reverse %}
+        <tr>
+          <td class="text-muted small">#{{ order.id }}</td>
+          <td class="small fw-semibold">{{ order.gig.title[:35] }}...</td>
+          <td class="small">{{ order.buyer.name }}</td>
+          <td class="small fw-semibold text-success">₹{{ "%.0f"|format(order.amount) }}</td>
+          <td><span class="status-badge status-{{ order.status }}">{{ order.status.replace('_',' ').title() }}</span></td>
+          <td class="text-muted small">{{ order.created_at.strftime('%d %b %Y') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted">No orders yet.</p>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if earnings_by_day %}
+const earningsCtx = document.getElementById('earningsChart').getContext('2d');
+new Chart(earningsCtx, {
+  type: 'line',
+  data: {
+    labels: {{ earnings_by_day.keys()|list|tojson }},
+    datasets: [{
+      label: 'Earnings (₹)',
+      data: {{ earnings_by_day.values()|list|tojson }},
+      borderColor: '#6C63FF',
+      backgroundColor: 'rgba(108,99,255,0.1)',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#6C63FF'
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: v => '₹' + v } }
+    }
+  }
+});
+{% endif %}
+
+{% if total_orders > 0 %}
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+  type: 'doughnut',
+  data: {
+    labels: {{ status_counts.keys()|list|tojson }},
+    datasets: [{
+      data: {{ status_counts.values()|list|tojson }},
+      backgroundColor: ['#cff4fc','#d1ecf1','#d4edda','#d4edda','#f8d7da','#e2e3e5','#fff3cd'],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 11 } } }
+    }
+  }
+});
+{% endif %}
+</script>
+{% endblock %}

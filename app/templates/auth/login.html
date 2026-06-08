@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Login — TaskHub{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card shadow-sm p-4 mt-4">
+      <div class="text-center mb-4">
+        <i class="bi bi-lightning-charge-fill fs-1 text-primary"></i>
+        <h3 class="fw-bold mt-2">Welcome back</h3>
+        <p class="text-muted">Login to your TaskHub account</p>
+      </div>
+      <form method="POST">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Email</label>
+          <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Password</label>
+          <input type="password" name="password" class="form-control" placeholder="Your password" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">Login</button>
+      </form>
+      <p class="text-center mt-3 text-muted small">Don't have an account? <a href="{{ url_for('auth.register') }}">Sign Up</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Verify Email — TaskHub{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card shadow-sm p-4 mt-4 text-center">
+      <i class="bi bi-envelope-check fs-1 text-primary mb-3"></i>
+      <h3 class="fw-bold">Verify your email</h3>
+      <p class="text-muted">We sent a 6-digit OTP to <strong>{{ email }}</strong></p>
+      <form method="POST">
+        <div class="mb-3">
+          <input type="text" name="otp" class="form-control form-control-lg text-center fw-bold"
+            placeholder="000000" maxlength="6" required
+            style="letter-spacing: 0.6rem; font-size: 1.5rem;">
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">Verify & Continue</button>
+      </form>
+      <p class="text-muted mt-3 small"><i class="bi bi-clock me-1"></i>OTP expires in 10 minutes</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

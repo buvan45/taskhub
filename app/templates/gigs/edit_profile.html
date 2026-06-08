@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Edit Profile — TaskHub{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h3 class="fw-bold mb-4">Edit Profile</h3>
+    <div class="card p-4">
+      <form method="POST" enctype="multipart/form-data">
+        <!-- Avatar Preview -->
+        <div class="text-center mb-4">
+          {% if current_user.avatar %}
+          <img src="{{ current_user.avatar }}" class="rounded-circle mb-2"
+            style="width:90px;height:90px;object-fit:cover;">
+          {% else %}
+          <div class="avatar mx-auto mb-2" style="width:90px;height:90px;font-size:2rem;">
+            {{ current_user.name[0].upper() }}
+          </div>
+          {% endif %}
+          <div>
+            <label for="avatar-input" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-camera me-1"></i>Change Photo
+            </label>
+            <input type="file" id="avatar-input" name="avatar" class="d-none"
+              accept=".png,.jpg,.jpeg,.gif"
+              onchange="previewAvatar(this)">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Full Name</label>
+          <input type="text" name="name" class="form-control" value="{{ current_user.name }}" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Bio</label>
+          <textarea name="bio" class="form-control" rows="4"
+            placeholder="Tell buyers about yourself...">{{ current_user.bio }}</textarea>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Skills</label>
+          <input type="text" name="skills" class="form-control"
+            value="{{ current_user.skills }}"
+            placeholder="e.g. Logo Design, Python, Video Editing">
+          <div class="form-text">Comma separated</div>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary px-5">Save Changes</button>
+          <a href="{{ url_for('gigs.profile', user_id=current_user.id) }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% block scripts %}
+<script>
+function previewAvatar(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.querySelector('.rounded-circle') || document.querySelector('.avatar');
+      if (img.tagName === 'IMG') {
+        img.src = e.target.result;
+      } else {
+        const newImg = document.createElement('img');
+        newImg.src = e.target.result;
+        newImg.className = 'rounded-circle mb-2';
+        newImg.style = 'width:90px;height:90px;object-fit:cover;';
+        img.replaceWith(newImg);
+      }
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends 'admin/base.html' %}
+{% block title %}Dashboard — TaskHub Admin{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-4">Dashboard</h3>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#e8f4fd;color:#0d6efd;"><i class="bi bi-people-fill"></i></div>
+        <div>
+          <div class="text-muted small">Total Users</div>
+          <div class="fs-4 fw-bold">{{ total_users }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#e8f8f0;color:#198754;"><i class="bi bi-grid-fill"></i></div>
+        <div>
+          <div class="text-muted small">Active Gigs</div>
+          <div class="fs-4 fw-bold">{{ total_gigs }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#f0eeff;color:#6C63FF;"><i class="bi bi-bag-fill"></i></div>
+        <div>
+          <div class="text-muted small">Total Orders</div>
+          <div class="fs-4 fw-bold">{{ total_orders }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#fff3cd;color:#856404;"><i class="bi bi-flag-fill"></i></div>
+        <div>
+          <div class="text-muted small">Disputes</div>
+          <div class="fs-4 fw-bold text-danger">{{ disputed_orders }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-12">
+    <div class="stat-card">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:#e8f8f0;color:#198754;"><i class="bi bi-currency-rupee"></i></div>
+        <div>
+          <div class="text-muted small">Total Revenue (Completed Orders)</div>
+          <div class="fs-3 fw-bold text-success">₹{{ "%.0f"|format(total_revenue) }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card p-4">
+      <h6 class="fw-bold mb-3">Recent Orders</h6>
+      {% if recent_orders %}
+      <table class="table table-sm table-borderless mb-0">
+        <thead class="text-muted small"><tr><th>#</th><th>Gig</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for order in recent_orders %}
+          <tr>
+            <td class="text-muted">#{{ order.id }}</td>
+            <td class="small fw-semibold">{{ order.gig.title[:25] }}...</td>
+            <td class="small text-success">₹{{ "%.0f"|format(order.amount) }}</td>
+            <td><span class="status-badge status-{{ order.status }}">{{ order.status.replace('_',' ').title() }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted small">No orders yet.</p>
+      {% endif %}
+      <a href="{{ url_for('admin.orders') }}" class="btn btn-sm btn-outline-primary mt-3">View All</a>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-4">
+      <h6 class="fw-bold mb-3">Recent Users</h6>
+      {% if recent_users %}
+      <table class="table table-sm table-borderless mb-0">
+        <thead class="text-muted small"><tr><th>Name</th><th>Email</th><th>Joined</th></tr></thead>
+        <tbody>
+          {% for user in recent_users %}
+          <tr>
+            <td class="small fw-semibold">{{ user.name }}</td>
+            <td class="small text-muted">{{ user.email[:25] }}</td>
+            <td class="small text-muted">{{ user.created_at.strftime('%d %b') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="text-muted small">No users yet.</p>
+      {% endif %}
+      <a href="{{ url_for('admin.users') }}" class="btn btn-sm btn-outline-primary mt-3">View All</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit Gig' if gig else 'Post a Gig' }} — TaskHub{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <h3 class="fw-bold mb-4">{{ 'Edit Gig' if gig else 'Post a New Gig' }}</h3>
+
+    {% if not gig %}
+    <div class="card p-4 mb-4" style="border: 1.5px dashed #6C63FF; background: #f8f7ff;">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-robot text-primary fs-5"></i>
+        <h6 class="fw-bold mb-0 text-primary">AI Gig Generator</h6>
+        <span class="badge bg-primary ms-1" style="font-size:0.65rem;">NEW</span>
+      </div>
+      <p class="text-muted small mb-3">Enter a few keywords about your skill and let AI write your gig for you.</p>
+      <div class="d-flex gap-2">
+        <input type="text" id="ai-keywords" class="form-control"
+          placeholder="e.g. logo design, minimalist, branding">
+        <button type="button" id="ai-generate-btn" class="btn btn-primary px-4 fw-semibold" style="white-space:nowrap;">
+          <i class="bi bi-stars me-1"></i>Generate
+        </button>
+      </div>
+      <div id="ai-loading" class="text-muted small mt-2 d-none">
+        <div class="spinner-border spinner-border-sm me-1" role="status"></div>
+        Generating your gig...
+      </div>
+      <div id="ai-error" class="text-danger small mt-2 d-none"></div>
+    </div>
+    {% endif %}
+
+    <div class="card p-4">
+      <form method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Gig Title *</label>
+          <input type="text" name="title" id="gig-title" class="form-control"
+            placeholder="e.g. I will design a logo for your brand"
+            value="{{ gig.title if gig else '' }}" required>
+          <div class="form-text">Be specific about what you'll deliver</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Description *</label>
+          <textarea name="description" id="gig-description" class="form-control" rows="6"
+            placeholder="Describe exactly what the buyer will receive..." required>{{ gig.description if gig else '' }}</textarea>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Price (₹) *</label>
+            <input type="number" name="price" id="gig-price" class="form-control"
+              placeholder="500" min="1" value="{{ gig.price if gig else '' }}" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Delivery Days</label>
+            <input type="number" name="delivery_days" id="gig-delivery" class="form-control"
+              min="1" max="30" value="{{ gig.delivery_days if gig else 3 }}">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Category</label>
+          <select name="category_id" class="form-select">
+            <option value="">Select a category</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}" {{ 'selected' if gig and gig.category_id == cat.id else '' }}>
+              {{ cat.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Gig Image</label>
+          {% if gig and gig.image %}
+          <div class="mb-2">
+            <img src="{{ gig.image }}" class="rounded-3 img-fluid" style="max-height:150px; object-fit:cover;">
+          </div>
+          {% endif %}
+          <input type="file" name="image" class="form-control" accept=".png,.jpg,.jpeg,.gif">
+          <div class="form-text">Upload a sample image of your work (PNG, JPG, GIF)</div>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary px-5 py-2 fw-semibold">
+            {{ 'Update Gig' if gig else 'Post Gig' }}
+          </button>
+          <a href="{{ url_for('gigs.home') }}" class="btn btn-outline-secondary px-4 py-2">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('ai-generate-btn')?.addEventListener('click', async function() {
+  const keywords = document.getElementById('ai-keywords').value.trim();
+  if (!keywords) {
+    document.getElementById('ai-error').textContent = 'Please enter some keywords first.';
+    document.getElementById('ai-error').classList.remove('d-none');
+    return;
+  }
+  document.getElementById('ai-error').classList.add('d-none');
+  document.getElementById('ai-loading').classList.remove('d-none');
+  this.disabled = true;
+
+  try {
+    const formData = new FormData();
+    formData.append('keywords', keywords);
+    const response = await fetch('{{ url_for("gigs.generate_gig") }}', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await response.json();
+    if (data.error) {
+      document.getElementById('ai-error').textContent = data.error;
+      document.getElementById('ai-error').classList.remove('d-none');
+    } else {
+      document.getElementById('gig-title').value = data.title || '';
+      document.getElementById('gig-description').value = data.description || '';
+      document.getElementById('gig-price').value = data.price || '';
+      document.getElementById('gig-delivery').value = data.delivery_days || 3;
+      // Highlight filled fields
+      ['gig-title', 'gig-description', 'gig-price', 'gig-delivery'].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.borderColor = '#6C63FF';
+        el.style.background = '#f8f7ff';
+        setTimeout(() => {
+          el.style.borderColor = '';
+          el.style.background = '';
+        }, 2000);
+      });
+    }
+  } catch (e) {
+    document.getElementById('ai-error').textContent = 'Something went wrong. Try again.';
+    document.getElementById('ai-error').classList.remove('d-none');
+  }
+
+  document.getElementById('ai-loading').classList.add('d-none');
+  this.disabled = false;
+});
+</script>
+{% endblock %}

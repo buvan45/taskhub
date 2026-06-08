@@ -1,0 +1,49 @@
+{% extends 'admin/base.html' %}
+{% block title %}Orders — TaskHub Admin{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold mb-0">Orders</h3>
+  <span class="text-muted">{{ orders|length }} results</span>
+</div>
+
+<!-- Filter -->
+<div class="d-flex gap-2 mb-4 flex-wrap">
+  <a href="{{ url_for('admin.orders') }}" class="btn btn-sm {% if not status %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">All</a>
+  {% for s in ['pending','paid','in_progress','delivered','completed','disputed','cancelled'] %}
+  <a href="?status={{ s }}" class="btn btn-sm {% if status == s %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">
+    {{ s.replace('_',' ').title() }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th><th>Gig</th><th>Buyer</th><th>Seller</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td class="text-muted small">#{{ order.id }}</td>
+          <td class="small fw-semibold">{{ order.gig.title[:30] }}...</td>
+          <td class="small">{{ order.buyer.name }}</td>
+          <td class="small">{{ order.seller.name }}</td>
+          <td class="small fw-semibold text-primary">₹{{ "%.0f"|format(order.amount) }}</td>
+          <td><span class="status-badge status-{{ order.status }}">{{ order.status.replace('_',' ').title() }}</span></td>
+          <td class="text-muted small">{{ order.created_at.strftime('%d %b %Y') }}</td>
+          <td>
+            <a href="{{ url_for('orders.order_detail', order_id=order.id) }}" target="_blank"
+              class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% if user.avatar %}
+<img src="{{ user.avatar }}" 
+  style="width:{{ size or '40' }}px;height:{{ size or '40' }}px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+{% else %}
+<div class="avatar" style="width:{{ size or '40' }}px;height:{{ size or '40' }}px;font-size:{{ (size or 40)|int // 2.5 }}px;flex-shrink:0;">
+  {{ user.name[0].upper() }}
+</div>
+{% endif %}

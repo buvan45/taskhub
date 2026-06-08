@@ -1,0 +1,59 @@
+{% extends 'admin/base.html' %}
+{% block title %}Categories — TaskHub Admin{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-4">Categories</h3>
+
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="card p-4">
+      <h6 class="fw-semibold mb-3">Add New Category</h6>
+      <form method="POST" action="{{ url_for('admin.add_category') }}">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Name *</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. Photography" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Bootstrap Icon</label>
+          <input type="text" name="icon" class="form-control" placeholder="e.g. camera" value="briefcase">
+          <div class="form-text">
+            Use any icon name from
+            <a href="https://icons.getbootstrap.com" target="_blank">Bootstrap Icons</a>
+            (without "bi-")
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Add Category</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>#</th><th>Icon</th><th>Name</th><th>Gigs</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for cat in categories %}
+            <tr>
+              <td class="text-muted small">{{ cat.id }}</td>
+              <td><i class="bi bi-{{ cat.icon }} fs-5 text-primary"></i></td>
+              <td class="fw-semibold">{{ cat.name }}</td>
+              <td class="text-muted small">{{ cat.gigs|length }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('admin.delete_category', cat_id=cat.id) }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                    onclick="return confirm('Delete {{ cat.name }}?')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

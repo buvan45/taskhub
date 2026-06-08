@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Report {{ user.name }} — TaskHub{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h3 class="fw-bold mb-4">Report User</h3>
+    <div class="card p-4">
+      <div class="d-flex align-items-center gap-3 mb-4 p-3 bg-light rounded-3">
+        {% if user.avatar %}
+        <img src="{{ user.avatar }}" class="rounded-circle" style="width:48px;height:48px;object-fit:cover;">
+        {% else %}
+        <div class="avatar" style="width:48px;height:48px;font-size:1.2rem;">{{ user.name[0].upper() }}</div>
+        {% endif %}
+        <div>
+          <div class="fw-semibold">{{ user.name }}</div>
+          <div class="text-muted small">{{ user.email }}</div>
+        </div>
+      </div>
+      <form method="POST">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Reason *</label>
+          <select name="reason" class="form-select" required>
+            <option value="">Select a reason</option>
+            <option value="Fake profile">Fake profile</option>
+            <option value="Scam or fraud">Scam or fraud</option>
+            <option value="Inappropriate content">Inappropriate content</option>
+            <option value="Harassment">Harassment</option>
+            <option value="Spam">Spam</option>
+            <option value="Did not deliver work">Did not deliver work</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Additional Details</label>
+          <textarea name="details" class="form-control" rows="4"
+            placeholder="Describe what happened in detail..."></textarea>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-danger px-5 fw-semibold">
+            <i class="bi bi-flag me-1"></i>Submit Report
+          </button>
+          <a href="{{ url_for('gigs.profile', user_id=user.id) }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

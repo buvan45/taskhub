@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% block title %}Order #{{ order.id }} — TaskHub{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-8">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <h4 class="fw-bold mb-0">Order #{{ order.id }}</h4>
+      <span class="status-badge status-{{ order.status }}">{{ order.status.replace('_', ' ').title() }}</span>
+    </div>
+
+    <div class="card p-4 mb-3">
+      <h6 class="fw-semibold mb-3">Gig</h6>
+      <a href="{{ url_for('gigs.gig_detail', gig_id=order.gig.id) }}" class="text-decoration-none text-dark">
+        <div class="d-flex align-items-center gap-3">
+          <div class="avatar">{{ order.gig.seller.name[0].upper() }}</div>
+          <div>
+            <div class="fw-semibold">{{ order.gig.title }}</div>
+            <div class="text-muted small">by {{ order.gig.seller.name }}</div>
+          </div>
+          <span class="ms-auto fw-bold text-primary">₹{{ "%.0f"|format(order.amount) }}</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Escrow Timeline -->
+    <div class="card p-4 mb-3">
+      <h6 class="fw-semibold mb-3">Order Progress</h6>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        {% for step, label in [('paid','Payment'), ('in_progress','In Progress'), ('delivered','Delivered'), ('completed','Completed')] %}
+        {% set states = ['paid','in_progress','delivered','completed','disputed'] %}
+        {% set current_idx = states.index(order.status) if order.status in states else 0 %}
+        {% set step_idx = states.index(step) %}
+        <div class="text-center">
+          <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+            style="width:36px;height:36px;font-size:0.85rem;
+            background:{% if step_idx <= current_idx %}#6C63FF{% else %}#e9ecef{% endif %};
+            color:{% if step_idx <= current_idx %}#fff{% else %}#adb5bd{% endif %};">
+            <i class="bi bi-check-lg"></i>
+          </div>
+          <div style="font-size:0.75rem;" class="{% if step_idx == current_idx %}fw-semibold text-primary{% else %}text-muted{% endif %}">{{ label }}</div>
+        </div>
+        {% if not loop.last %}
+        <div class="flex-grow-1" style="height:2px;background:{% if step_idx < current_idx %}#6C63FF{% else %}#e9ecef{% endif %};min-width:20px;"></div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if order.delivery_note %}
+    <div class="card p-4 mb-3">
+      <h6 class="fw-semibold mb-2">Delivery Note</h6>
+      <p class="text-muted mb-0" style="white-space:pre-wrap;">{{ order.delivery_note }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="card p-4 mb-3">
+      <h6 class="fw-semibold mb-3">Actions</h6>
+      <div class="d-flex flex-wrap gap-2">
+
+        {% if current_user.id == order.seller_id %}
+          {% if order.status == 'paid' %}
+          <form method="POST" action="{{ url_for('orders.start_order', order_id=order.id) }}">
+            <button class="btn btn-primary">
+              <i class="bi bi-play-fill me-1"></i>Start Order
+            </button>
+          </form>
+          {% endif %}
+          {% if order.status == 'in_progress' %}
+          <button class="btn btn-success" data-bs-toggle="collapse" data-bs-target="#deliverForm">
+            <i class="bi bi-upload me-1"></i>Mark as Delivered
+          </button>
+          <div class="collapse w-100 mt-2" id="deliverForm">
+            <form method="POST" action="{{ url_for('orders.deliver_order', order_id=order.id) }}">
+              <textarea name="delivery_note" class="form-control mb-2" rows="3"
+                placeholder="Describe what you've delivered, add any links..."></textarea>
+              <button type="submit" class="btn btn-success">Submit Delivery</button>
+            </form>
+          </div>
+          {% endif %}
+        {% endif %}
+
+        {% if current_user.id == order.buyer_id %}
+          {% if order.status == 'delivered' %}
+          <form method="POST" action="{{ url_for('orders.complete_order', order_id=order.id) }}">
+            <button class="btn btn-success" onclick="return confirm('Release payment to seller?')">
+              <i class="bi bi-check-circle me-1"></i>Approve & Release Payment
+            </button>
+          </form>
+          <form method="POST" action="{{ url_for('orders.dispute_order', order_id=order.id) }}">
+            <button class="btn btn-outline-danger">
+              <i class="bi bi-flag me-1"></i>Raise Dispute
+            </button>
+          </form>
+          {% endif %}
+        {% endif %}
+
+        <a href="{{ url_for('chat.chat', order_id=order.id) }}" class="btn btn-outline-primary">
+          <i class="bi bi-chat-dots me-1"></i>Open Chat
+        </a>
+      </div>
+    </div>
+
+    <!-- AI Dispute Resolution -->
+    {% if order.status == 'disputed' %}
+    <div class="card p-4 mb-3 border-warning">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-robot fs-4 text-warning"></i>
+        <h6 class="fw-semibold mb-0">AI Dispute Resolution</h6>
+      </div>
+      {% if order.ai_verdict %}
+      <div class="bg-light rounded-3 p-3 mb-3" style="white-space:pre-wrap; font-size:0.9rem;">{{ order.ai_verdict }}</div>
+      <form method="POST" action="{{ url_for('orders.ai_verdict', order_id=order.id) }}">
+        <button type="submit" class="btn btn-sm btn-outline-warning">
+          <i class="bi bi-arrow-clockwise me-1"></i>Regenerate Verdict
+        </button>
+      </form>
+      {% else %}
+      <p class="text-muted small mb-3">Let AI analyze the chat history and delivery note to suggest a fair resolution.</p>
+      <form method="POST" action="{{ url_for('orders.ai_verdict', order_id=order.id) }}">
+        <button type="submit" class="btn btn-warning fw-semibold">
+          <i class="bi bi-robot me-2"></i>Generate AI Verdict
+        </button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Review -->
+    {% if order.status == 'completed' and current_user.id == order.buyer_id and not review %}
+    <div class="card p-4">
+      <h6 class="fw-semibold mb-3">Leave a Review</h6>
+      <form method="POST" action="{{ url_for('orders.submit_review', order_id=order.id) }}">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rating</label>
+          <select name="rating" class="form-select">
+            <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+            <option value="4">⭐⭐⭐⭐ Good</option>
+            <option value="3">⭐⭐⭐ Average</option>
+            <option value="2">⭐⭐ Poor</option>
+            <option value="1">⭐ Terrible</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Comment</label>
+          <textarea name="comment" class="form-control" rows="3" placeholder="Share your experience..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Review</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if review %}
+    <div class="card p-4 border-success">
+      <h6 class="fw-semibold mb-1">Your Review</h6>
+      <div class="text-warning mb-1">{% for i in range(review.rating) %}<i class="bi bi-star-fill"></i>{% endfor %}</div>
+      <p class="text-muted mb-0">{{ review.comment }}</p>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <div class="col-md-4">
+    <div class="card p-4 mb-3">
+      <h6 class="fw-semibold mb-3">Order Info</h6>
+      <table class="table table-sm table-borderless text-muted small mb-0">
+        <tr><td>Order ID</td><td class="fw-semibold">#{{ order.id }}</td></tr>
+        <tr><td>Amount</td><td class="fw-semibold text-primary">₹{{ "%.0f"|format(order.amount) }}</td></tr>
+        <tr><td>Status</td><td><span class="status-badge status-{{ order.status }}">{{ order.status.replace('_',' ').title() }}</span></td></tr>
+        <tr><td>Placed</td><td>{{ order.created_at.strftime('%d %b %Y') }}</td></tr>
+        {% if order.delivered_at %}<tr><td>Delivered</td><td>{{ order.delivered_at.strftime('%d %b %Y') }}</td></tr>{% endif %}
+        {% if order.completed_at %}<tr><td>Completed</td><td>{{ order.completed_at.strftime('%d %b %Y') }}</td></tr>{% endif %}
+        {% if order.auto_cancel_at and order.status == 'paid' %}
+        <tr><td>Auto Cancel</td><td class="fw-semibold text-danger">{{ order.auto_cancel_at.strftime('%d %b %Y %I:%M %p') }}</td></tr>
+        {% endif %}
+        {% if order.auto_release_at and order.status == 'delivered' %}
+        <tr><td>Auto Release</td><td class="fw-semibold text-warning">{{ order.auto_release_at.strftime('%d %b %Y %I:%M %p') }}</td></tr>
+        {% endif %}
+      </table>
+    </div>
+    <div class="card p-4">
+      <h6 class="fw-semibold mb-3">Parties</h6>
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <div class="avatar" style="width:32px;height:32px;font-size:0.8rem;">{{ order.buyer.name[0].upper() }}</div>
+        <div>
+          <div class="small fw-semibold">{{ order.buyer.name }}</div>
+          <div class="text-muted" style="font-size:0.7rem;">Buyer</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <div class="avatar" style="width:32px;height:32px;font-size:0.8rem;">{{ order.seller.name[0].upper() }}</div>
+        <div>
+          <div class="small fw-semibold">{{ order.seller.name }}</div>
+          <div class="text-muted" style="font-size:0.7rem;">Seller</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

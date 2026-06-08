@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}Chat — Order #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <a href="{{ url_for('orders.order_detail', order_id=order.id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <h5 class="fw-bold mb-0">Order #{{ order.id }}</h5>
+      <span class="status-badge status-{{ order.status }} ms-auto">
+        {{ order.status.replace('_',' ').title() }}
+      </span>
+    </div>
+
+    <div class="card">
+      <div id="chat-box" class="p-4" style="height:450px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;">
+        {% if messages %}
+          {% for msg in messages %}
+          <div class="d-flex {% if msg.sender_id == current_user.id %}justify-content-end{% else %}justify-content-start{% endif %}">
+            <div style="max-width:70%;">
+              {% if msg.sender_id != current_user.id %}
+              <div class="text-muted small mb-1">{{ msg.sender.name }}</div>
+              {% endif %}
+
+              {% if msg.file_url %}
+                {% if msg.file_type == 'image' %}
+                <a href="{{ msg.file_url }}" target="_blank">
+                  <img src="{{ msg.file_url }}" class="rounded-3 img-fluid" style="max-width:220px; cursor:pointer;">
+                </a>
+                {% else %}
+                <a href="{{ msg.file_url }}" target="_blank" class="text-decoration-none">
+                  <div class="px-3 py-2 rounded-3 d-flex align-items-center gap-2"
+                    style="background:{% if msg.sender_id == current_user.id %}#6C63FF{% else %}#f0f0f0{% endif %};
+                           color:{% if msg.sender_id == current_user.id %}#fff{% else %}#333{% endif %};">
+                    <i class="bi bi-file-earmark-arrow-down fs-5"></i>
+                    <span style="font-size:0.85rem;">{{ msg.file_name }}</span>
+                  </div>
+                </a>
+                {% endif %}
+              {% else %}
+              <div class="px-3 py-2 rounded-3"
+                style="background:{% if msg.sender_id == current_user.id %}#6C63FF{% else %}#f0f0f0{% endif %};
+                       color:{% if msg.sender_id == current_user.id %}#fff{% else %}#333{% endif %};">
+                {{ msg.content }}
+              </div>
+              {% endif %}
+
+              <div class="text-muted mt-1" style="font-size:0.7rem; text-align:{% if msg.sender_id == current_user.id %}right{% else %}left{% endif %};">
+                {{ msg.created_at.strftime('%I:%M %p') }}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center text-muted m-auto">
+            <i class="bi bi-chat-dots fs-1 d-block mb-2 opacity-25"></i>
+            No messages yet. Say hello!
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- File Upload Bar -->
+      <div class="border-top px-3 pt-2 pb-1">
+        <form method="POST" action="{{ url_for('chat.upload_file', order_id=order.id) }}" enctype="multipart/form-data" id="upload-form">
+          <div class="d-flex align-items-center gap-2">
+            <label for="file-input" class="btn btn-sm btn-outline-secondary mb-0" title="Attach file">
+              <i class="bi bi-paperclip"></i>
+            </label>
+            <input type="file" id="file-input" name="file" class="d-none"
+              accept=".png,.jpg,.jpeg,.gif,.pdf,.doc,.docx,.txt,.zip"
+              onchange="document.getElementById('upload-form').submit()">
+            <span id="file-name-preview" class="text-muted small"></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Message Input -->
+      <div class="border-top p-3">
+        <div class="d-flex gap-2">
+          <input type="text" id="message-input" class="form-control"
+            placeholder="Type a message..." autocomplete="off">
+          <button id="send-btn" class="btn btn-primary px-4">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  const orderId = {{ order.id }};
+  const currentUserId = {{ current_user.id }};
+  const chatBox = document.getElementById('chat-box');
+
+  socket.emit('join', { order_id: orderId });
+
+  function scrollBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
+  scrollBottom();
+
+  document.getElementById('file-input').addEventListener('change', function() {
+    const name = this.files[0]?.name || '';
+    document.getElementById('file-name-preview').textContent = name ? `Uploading: ${name}` : '';
+  });
+
+  document.getElementById('send-btn').addEventListener('click', sendMessage);
+  document.getElementById('message-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  function sendMessage() {
+    const input = document.getElementById('message-input');
+    const content = input.value.trim();
+    if (!content) return;
+    socket.emit('send_message', { order_id: orderId, content: content });
+    input.value = '';
+  }
+
+  socket.on('receive_message', function(data) {
+    const isMe = data.sender_id === currentUserId;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'd-flex ' + (isMe ? 'justify-content-end' : 'justify-content-start');
+
+    let contentHtml = '';
+    if (data.file_url) {
+      if (data.file_type === 'image') {
+        contentHtml = `<a href="${data.file_url}" target="_blank">
+          <img src="${data.file_url}" class="rounded-3 img-fluid" style="max-width:220px;">
+        </a>`;
+      } else {
+        contentHtml = `<a href="${data.file_url}" target="_blank" class="text-decoration-none">
+          <div class="px-3 py-2 rounded-3 d-flex align-items-center gap-2"
+            style="background:${isMe ? '#6C63FF' : '#f0f0f0'};color:${isMe ? '#fff' : '#333'};">
+            <i class="bi bi-file-earmark-arrow-down fs-5"></i>
+            <span style="font-size:0.85rem;">${data.file_name}</span>
+          </div>
+        </a>`;
+      }
+    } else {
+      contentHtml = `<div class="px-3 py-2 rounded-3"
+        style="background:${isMe ? '#6C63FF' : '#f0f0f0'};color:${isMe ? '#fff' : '#333'};">
+        ${data.content}
+      </div>`;
+    }
+
+    wrapper.innerHTML = `
+      <div style="max-width:70%;">
+        ${!isMe ? `<div class="text-muted small mb-1">${data.sender}</div>` : ''}
+        ${contentHtml}
+        <div class="text-muted mt-1" style="font-size:0.7rem;text-align:${isMe ? 'right' : 'left'};">
+          ${data.time}
+        </div>
+      </div>`;
+    chatBox.appendChild(wrapper);
+    scrollBottom();
+  });
+</script>
+{% endblock %}

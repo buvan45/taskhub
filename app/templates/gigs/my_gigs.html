@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}My Gigs — TaskHub{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold mb-0">My Gigs</h3>
+  <a href="{{ url_for('gigs.new_gig') }}" class="btn btn-primary">
+    <i class="bi bi-plus-circle me-1"></i>Post New Gig
+  </a>
+</div>
+
+{% if gigs %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Delivery</th>
+          <th>Orders</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for gig in gigs %}
+        <tr>
+          <td>
+            <a href="{{ url_for('gigs.gig_detail', gig_id=gig.id) }}" class="fw-semibold text-dark text-decoration-none">
+              {{ gig.title[:50] }}{% if gig.title|length > 50 %}...{% endif %}
+            </a>
+          </td>
+          <td>
+            {% if gig.category %}
+            <span class="badge-category">{{ gig.category.name }}</span>
+            {% else %}
+            <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          <td class="fw-semibold text-primary">₹{{ "%.0f"|format(gig.price) }}</td>
+          <td class="text-muted small"><i class="bi bi-clock me-1"></i>{{ gig.delivery_days }}d</td>
+          <td>
+            <span class="badge bg-light text-dark border">{{ gig.orders|length }}</span>
+          </td>
+          <td>
+            <div class="d-flex gap-2">
+              <a href="{{ url_for('gigs.edit_gig', gig_id=gig.id) }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="POST" action="{{ url_for('gigs.delete_gig', gig_id=gig.id) }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Delete this gig?')">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-grid fs-1 d-block mb-3 opacity-25"></i>
+  <h5>No gigs yet</h5>
+  <p>Post your first gig and start earning.</p>
+  <a href="{{ url_for('gigs.new_gig') }}" class="btn btn-primary px-5">Post a Gig</a>
+</div>
+{% endif %}
+{% endblock %}

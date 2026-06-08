@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}{{ gig.title }} — TaskHub{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-8">
+    {% if gig.image %}
+    <img src="{{ gig.image }}" class="w-100 rounded-4 mb-4" style="max-height:280px; object-fit:cover;">
+    {% else %}
+    <div class="w-100 rounded-4 mb-4 d-flex align-items-center justify-content-center"
+      style="height:200px; background:linear-gradient(135deg, #6C63FF, #574fd6);">
+      <i class="bi bi-lightning-charge-fill text-white" style="font-size:3rem;"></i>
+    </div>
+    {% endif %}
+    <nav aria-label="breadcrumb" class="mb-3">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('gigs.home') }}">Home</a></li>
+        <li class="breadcrumb-item active">{{ gig.title[:40] }}...</li>
+      </ol>
+    </nav>
+    <h2 class="fw-bold mb-3">{{ gig.title }}</h2>
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a href="{{ url_for('gigs.profile', user_id=gig.seller.id) }}" class="d-flex align-items-center gap-2 text-decoration-none text-dark">
+        <div class="avatar">{{ gig.seller.name[0].upper() }}</div>
+        <div>
+          <div class="fw-semibold">{{ gig.seller.name }}</div>
+          {% if gig.seller.rating > 0 %}
+          <div class="text-warning small"><i class="bi bi-star-fill"></i> {{ "%.1f"|format(gig.seller.rating) }} ({{ gig.seller.total_reviews }} reviews)</div>
+          {% else %}
+          <div class="text-muted small">No reviews yet</div>
+          {% endif %}
+        </div>
+      </a>
+      {% if gig.category %}
+      <span class="badge-category ms-auto"><i class="bi bi-tag me-1"></i>{{ gig.category.name }}</span>
+      {% endif %}
+    </div>
+    <div class="card p-4 mb-3">
+      <h5 class="fw-semibold mb-3">About this gig</h5>
+      <p class="text-muted" style="white-space: pre-wrap; line-height: 1.8;">{{ gig.description }}</p>
+    </div>
+    {% if gig.seller.bio %}
+    <div class="card p-4">
+      <h5 class="fw-semibold mb-2">About the seller</h5>
+      <p class="text-muted mb-2">{{ gig.seller.bio }}</p>
+      {% if gig.seller.skills %}
+      <div class="d-flex flex-wrap gap-1">
+        {% for skill in gig.seller.skills.split(',') %}
+        <span class="badge-category">{{ skill.strip() }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-md-4">
+    <div class="card p-4 sticky-top" style="top: 80px;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="fs-2 fw-bold text-primary">₹{{ "%.0f"|format(gig.price) }}</span>
+        <span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ gig.delivery_days }} day delivery</span>
+      </div>
+      <ul class="list-unstyled text-muted small mb-4">
+        <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>Secure escrow payment</li>
+        <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>Money held until you approve</li>
+        <li class="mb-1"><i class="bi bi-check-circle-fill text-success me-2"></i>Real-time chat with seller</li>
+      </ul>
+      {% if current_user.is_authenticated and current_user.id != gig.seller_id %}
+      <a href="{{ url_for('chat.gig_chat', gig_id=gig.id, other_user_id=current_user.id) }}" class="btn btn-outline-primary w-100 py-2 mb-2">
+        <i class="bi bi-chat-dots me-2"></i>Contact Seller
+      </a>
+      {% endif %}
+      {% if current_user.is_authenticated %}
+        {% if current_user.id != gig.seller_id %}
+        <form method="POST" action="{{ url_for('orders.place_order', gig_id=gig.id) }}">
+          <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+            <i class="bi bi-bag-check me-2"></i>Order Now
+          </button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('gigs.edit_gig', gig_id=gig.id) }}" class="btn btn-outline-primary w-100 py-2 mb-2">
+          <i class="bi bi-pencil me-2"></i>Edit Gig
+        </a>
+        <form method="POST" action="{{ url_for('gigs.delete_gig', gig_id=gig.id) }}">
+          <button type="submit" class="btn btn-outline-danger w-100 py-2" onclick="return confirm('Delete this gig?')">
+            <i class="bi bi-trash me-2"></i>Delete Gig
+          </button>
+        </form>
+        {% endif %}
+      {% else %}
+      <a href="{{ url_for('auth.login') }}" class="btn btn-primary w-100 py-2 fw-semibold">Login to Order</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

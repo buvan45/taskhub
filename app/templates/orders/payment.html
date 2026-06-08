@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Pay for {{ gig.title }} — TaskHub{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card p-4 shadow-sm">
+      <h4 class="fw-bold mb-1">Complete Payment</h4>
+      <p class="text-muted mb-4">You're one step away from placing your order</p>
+
+      <div class="card bg-light p-3 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">{{ gig.title }}</div>
+            <div class="text-muted small">by {{ gig.seller.name }}</div>
+          </div>
+          <div class="fs-4 fw-bold text-primary">₹{{ "%.0f"|format(gig.price) }}</div>
+        </div>
+      </div>
+
+      <ul class="list-unstyled text-muted small mb-4">
+        <li class="mb-2"><i class="bi bi-shield-check-fill text-success me-2"></i>Payment held securely in escrow</li>
+        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Released only when you approve delivery</li>
+        <li class="mb-2"><i class="bi bi-arrow-counterclockwise text-success me-2"></i>Dispute protection if work isn't delivered</li>
+      </ul>
+
+      <button id="pay-btn" class="btn btn-primary w-100 py-2 fw-semibold fs-5">
+        <i class="bi bi-lock-fill me-2"></i>Pay ₹{{ "%.0f"|format(gig.price) }} Securely
+      </button>
+
+      <form id="payment-form" method="POST" action="{{ url_for('orders.verify_payment') }}" class="d-none">
+        <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+        <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+        <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+      </form>
+
+      <div class="text-center mt-3">
+        <p class="text-muted small mb-2">— or for testing —</p>
+        <form method="POST" action="{{ url_for('orders.simulate_payment', order_id=order.id) }}">
+          <button type="submit" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-lightning me-1"></i>Simulate Test Payment
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  document.getElementById('pay-btn').addEventListener('click', function() {
+    var options = {
+      key: '{{ razorpay_key_id }}',
+      amount: {{ amount }},
+      currency: 'INR',
+      name: 'TaskHub',
+      description: '{{ gig.title }}',
+      order_id: '{{ razorpay_order_id }}',
+      prefill: {
+        name: '{{ user_name }}',
+        email: '{{ user_email }}'
+      },
+      theme: { color: '#6C63FF' },
+      handler: function(response) {
+        document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+        document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+        document.getElementById('razorpay_signature').value = response.razorpay_signature;
+        document.getElementById('payment-form').submit();
+      }
+    };
+    var rzp = new Razorpay(options);
+    rzp.open();
+  });
+</script>
+{% endblock %}

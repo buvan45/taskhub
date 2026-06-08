@@ -1,0 +1,78 @@
+{% extends 'admin/base.html' %}
+{% block title %}Gigs — TaskHub Admin{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="fw-bold mb-0">Gigs</h3>
+  <span class="text-muted">{{ gigs|length }} total</span>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Gig</th>
+          <th>Seller</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Orders</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for gig in gigs %}
+        <tr>
+          <td class="text-muted small">{{ gig.id }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              {% if gig.image %}
+              <img src="{{ gig.image }}" class="rounded" style="width:40px;height:40px;object-fit:cover;">
+              {% else %}
+              <div class="rounded d-flex align-items-center justify-content-center"
+                style="width:40px;height:40px;background:#f0eeff;">
+                <i class="bi bi-image text-primary"></i>
+              </div>
+              {% endif %}
+              <span class="fw-semibold small">{{ gig.title[:40] }}...</span>
+            </div>
+          </td>
+          <td class="small">{{ gig.seller.name }}</td>
+          <td class="small">
+            {% if gig.category %}
+            <span class="badge" style="background:#f0eeff;color:#6C63FF;">{{ gig.category.name }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="small fw-semibold text-primary">₹{{ "%.0f"|format(gig.price) }}</td>
+          <td class="small">{{ gig.orders|length }}</td>
+          <td>
+            {% if gig.is_active %}
+            <span class="badge bg-success">Active</span>
+            {% else %}
+            <span class="badge bg-secondary">Removed</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('gigs.gig_detail', gig_id=gig.id) }}" target="_blank"
+                class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% if gig.is_active %}
+              <form method="POST" action="{{ url_for('admin.remove_gig', gig_id=gig.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                  onclick="return confirm('Remove this gig?')">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

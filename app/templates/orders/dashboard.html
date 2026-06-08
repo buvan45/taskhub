@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — TaskHub{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-4">My Dashboard</h3>
+
+<a href="{{ url_for('orders.analytics') }}" class="btn btn-outline-primary btn-sm">
+  <i class="bi bi-bar-chart me-1"></i>View Analytics
+</a>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small mb-1">Total Earned</div>
+      <div class="fs-4 fw-bold text-success">₹{{ "%.0f"|format(total_earned) }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small mb-1">Total Spent</div>
+      <div class="fs-4 fw-bold text-primary">₹{{ "%.0f"|format(total_spent) }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small mb-1">Orders Selling</div>
+      <div class="fs-4 fw-bold">{{ selling|length }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="text-muted small mb-1">Orders Buying</div>
+      <div class="fs-4 fw-bold">{{ buying|length }}</div>
+    </div>
+  </div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="dashTabs">
+  <li class="nav-item">
+    <a class="nav-link active" data-bs-toggle="tab" href="#selling">
+      <i class="bi bi-briefcase me-1"></i>Selling ({{ selling|length }})
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#buying">
+      <i class="bi bi-bag me-1"></i>Buying ({{ buying|length }})
+    </a>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="selling">
+    {% if selling %}
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th><th>Gig</th><th>Buyer</th><th>Amount</th><th>Status</th><th>Date</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in selling %}
+            <tr>
+              <td class="text-muted small">#{{ order.id }}</td>
+              <td class="fw-semibold small">{{ order.gig.title[:40] }}...</td>
+              <td class="small">{{ order.buyer.name }}</td>
+              <td class="fw-semibold text-success">₹{{ "%.0f"|format(order.amount) }}</td>
+              <td><span class="status-badge status-{{ order.status }}">{{ order.status.replace('_',' ').title() }}</span></td>
+              <td class="text-muted small">{{ order.created_at.strftime('%d %b') }}</td>
+              <td><a href="{{ url_for('orders.order_detail', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">View</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-briefcase fs-1 d-block mb-3 opacity-25"></i>
+      <p>No orders yet. <a href="{{ url_for('gigs.new_gig') }}">Post a gig</a> to start selling.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="buying">
+    {% if buying %}
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th><th>Gig</th><th>Seller</th><th>Amount</th><th>Status</th><th>Date</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in buying %}
+            <tr>
+              <td class="text-muted small">#{{ order.id }}</td>
+              <td class="fw-semibold small">{{ order.gig.title[:40] }}...</td>
+              <td class="small">{{ order.seller.name }}</td>
+              <td class="fw-semibold text-primary">₹{{ "%.0f"|format(order.amount) }}</td>
+              <td><span class="status-badge status-{{ order.status }}">{{ order.status.replace('_',' ').title() }}</span></td>
+              <td class="text-muted small">{{ order.created_at.strftime('%d %b') }}</td>
+              <td><a href="{{ url_for('orders.order_detail', order_id=order.id) }}" class="btn btn-sm btn-outline-primary">View</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-bag fs-1 d-block mb-3 opacity-25"></i>
+      <p>No purchases yet. <a href="{{ url_for('gigs.home') }}">Browse gigs</a> to get started.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

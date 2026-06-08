@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}TaskHub — Find & Hire Freelancers{% endblock %}
+{% block content %}
+
+<div class="p-5 mb-4 rounded-4 text-white hero-gradient">
+  <div class="py-3">
+    <h1 class="fw-bold display-5">Find the perfect freelancer</h1>
+    <p class="fs-5 opacity-75">Post a gig or hire someone for any skill — design, code, writing & more.</p>
+    {% if not current_user.is_authenticated %}
+    <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-lg px-5 fw-semibold">Get Started Free</a>
+    {% else %}
+    <a href="{{ url_for('gigs.new_gig') }}" class="btn btn-light btn-lg px-5 fw-semibold">
+      <i class="bi bi-plus-circle me-2"></i>Post a Gig
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Search Bar -->
+<div class="row justify-content-center mb-4">
+  <div class="col-md-7">
+    <form method="GET" action="{{ url_for('gigs.home') }}">
+      <div class="input-group input-group-lg shadow-sm">
+        <span class="input-group-text bg-white border-end-0">
+          <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" name="q" class="form-control border-start-0 ps-0"
+          placeholder="Search for any skill or service..."
+          value="{{ search }}">
+        <button class="btn btn-primary px-4" type="submit">Search</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if categories %}
+<div class="d-flex gap-2 flex-wrap mb-4">
+  <a href="{{ url_for('gigs.home') }}" class="btn btn-sm {% if not request.args.get('category') %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">All</a>
+  {% for cat in categories %}
+  <a href="?category={{ cat.id }}" class="btn btn-sm {% if request.args.get('category') == cat.id|string %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill">
+    <i class="bi bi-{{ cat.icon }} me-1"></i>{{ cat.name }}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">
+    {% if search %}
+      Results for "{{ search }}"
+    {% elif request.args.get('category') %}
+      Filtered Gigs
+    {% else %}
+      All Gigs
+    {% endif %}
+    <span class="text-muted fw-normal fs-6">({{ gigs|length }})</span>
+  </h5>
+  {% if search or request.args.get('category') %}
+  <a href="{{ url_for('gigs.home') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-x me-1"></i>Clear
+  </a>
+  {% endif %}
+</div>
+
+{% if gigs %}
+<div class="row row-cols-1 row-cols-md-3 g-4">
+  {% for gig in gigs %}
+  <div class="col">
+    <a href="{{ url_for('gigs.gig_detail', gig_id=gig.id) }}" class="text-decoration-none">
+      <div class="card gig-card h-100">
+        {% if gig.image %}
+        <img src="{{ gig.image }}" class="card-img-top" style="height:140px; object-fit:cover; border-radius:12px 12px 0 0;">
+        {% else %}
+        <div style="height:140px; background:linear-gradient(135deg, #6C63FF, #574fd6); border-radius:12px 12px 0 0; display:flex; align-items:center; justify-content:center;">
+          <i class="bi bi-lightning-charge-fill text-white" style="font-size:2rem;"></i>
+        </div>
+        {% endif %}
+        <div class="p-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            {% if gig.seller.avatar %}
+            <img src="{{ gig.seller.avatar }}" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;flex-shrink:0;">
+            {% else %}
+            <div class="avatar" style="width:32px;height:32px;font-size:0.8rem;">{{ gig.seller.name[0].upper() }}</div>
+            {% endif %}
+            <span class="text-muted small">{{ gig.seller.name }}</span>
+            {% if gig.seller.rating > 0 %}
+            <span class="text-warning small ms-auto"><i class="bi bi-star-fill"></i> {{ "%.1f"|format(gig.seller.rating) }}</span>
+            {% endif %}
+          </div>
+          <h6 class="fw-semibold text-dark mb-2">{{ gig.title }}</h6>
+          <p class="text-muted small mb-3">{{ gig.description[:80] }}{% if gig.description|length > 80 %}...{% endif %}</p>
+          <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+            <span class="fw-bold text-primary">₹{{ "%.0f"|format(gig.price) }}</span>
+            <span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ gig.delivery_days }}d delivery</span>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-grid fs-1 d-block mb-3 opacity-25"></i>
+  <h5>{% if search %}No results for "{{ search }}"{% else %}No gigs found{% endif %}</h5>
+  <p>{% if search %}Try a different keyword or <a href="{{ url_for('gigs.home') }}">browse all gigs</a>{% else %}Be the first to <a href="{{ url_for('gigs.new_gig') }}">post a gig!</a>{% endif %}</p>
+</div>
+{% endif %}
+{% endblock %}
