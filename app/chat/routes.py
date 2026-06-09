@@ -32,7 +32,6 @@ def gig_chat(gig_id, other_user_id):
     from app.models import Gig, User
     gig = Gig.query.get_or_404(gig_id)
     other_user = User.query.get_or_404(other_user_id)
-    # Only buyer and seller can access
     if current_user.id not in [gig.seller_id, other_user_id]:
         flash('Access denied.', 'danger')
         return redirect(url_for('gigs.home'))
@@ -50,7 +49,6 @@ def gig_chat(gig_id, other_user_id):
 @login_required
 def inbox():
     from app.models import Gig
-    # Get all gig conversations involving current user
     sent = Message.query.filter(
         Message.gig_id != None,
         Message.sender_id == current_user.id
@@ -64,8 +62,6 @@ def inbox():
             Message.sender_id == current_user.id
         )
     ).all()
-
-    # Build unique conversations
     conversations = {}
     for msg in sent + received:
         if not msg.gig_id:
@@ -87,7 +83,6 @@ def inbox():
         else:
             if msg.created_at > conversations[key]['last_message'].created_at:
                 conversations[key]['last_message'] = msg
-
     convos = sorted(conversations.values(), key=lambda x: x['last_message'].created_at, reverse=True)
     return render_template('chat/inbox.html', conversations=convos)
 
@@ -95,6 +90,7 @@ def inbox():
 @login_required
 def gig_upload_file(gig_id, other_user_id):
     from app.models import Gig
+    from app.utils import upload_image
     gig = Gig.query.get_or_404(gig_id)
     if 'file' not in request.files:
         flash('No file selected.', 'danger')
@@ -104,12 +100,8 @@ def gig_upload_file(gig_id, other_user_id):
         flash('Invalid file.', 'danger')
         return redirect(url_for('chat.gig_chat', gig_id=gig_id, other_user_id=other_user_id))
     filename = secure_filename(file.filename)
-    unique_filename = f"gig_{gig_id}_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{filename}"
-    upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
-    os.makedirs(upload_folder, exist_ok=True)
-    file.save(os.path.join(upload_folder, unique_filename))
-    file_url = f"/static/uploads/{unique_filename}"
     file_type = 'image' if is_image(filename) else 'document'
+    file_url = upload_image(file, folder='taskhub/chat')
     room = f"gig_{gig_id}_user_{min(current_user.id, other_user_id)}_{max(current_user.id, other_user_id)}"
     message = Message(
         gig_id=gig_id,
@@ -135,6 +127,7 @@ def gig_upload_file(gig_id, other_user_id):
 @chat_bp.route('/<int:order_id>/upload', methods=['POST'])
 @login_required
 def upload_file(order_id):
+    from app.utils import upload_image
     order = Order.query.get_or_404(order_id)
     if current_user.id not in [order.buyer_id, order.seller_id]:
         return {'error': 'Access denied'}, 403
@@ -149,13 +142,8 @@ def upload_file(order_id):
         flash('File type not allowed.', 'danger')
         return redirect(url_for('chat.chat', order_id=order_id))
     filename = secure_filename(file.filename)
-    unique_filename = f"{order_id}_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{filename}"
-    upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
-    os.makedirs(upload_folder, exist_ok=True)
-    upload_path = os.path.join(upload_folder, unique_filename)
-    file.save(upload_path)
-    file_url = f"/static/uploads/{unique_filename}"
     file_type = 'image' if is_image(filename) else 'document'
+    file_url = upload_image(file, folder='taskhub/chat')
     message = Message(
         order_id=order_id,
         sender_id=current_user.id,

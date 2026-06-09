@@ -41,16 +41,11 @@ def new_gig():
             category_id=int(category_id) if category_id else None,
             seller_id=current_user.id
         )
-        # Handle image upload
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename != '':
-                filename = secure_filename(file.filename)
-                unique_name = f"gig_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{filename}"
-                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'gigs')
-                os.makedirs(upload_folder, exist_ok=True)
-                file.save(os.path.join(upload_folder, unique_name))
-                gig.image = f"/static/uploads/gigs/{unique_name}"
+                from app.utils import upload_image
+                gig.image = upload_image(file, folder='taskhub/gigs')
         db.session.add(gig)
         db.session.commit()
         flash('Gig created successfully!', 'success')
@@ -125,12 +120,8 @@ def edit_profile():
         if 'avatar' in request.files:
             file = request.files['avatar']
             if file and file.filename != '':
-                filename = secure_filename(file.filename)
-                unique_name = f"avatar_{current_user.id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{filename}"
-                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'avatars')
-                os.makedirs(upload_folder, exist_ok=True)
-                file.save(os.path.join(upload_folder, unique_name))
-                current_user.avatar = f"/static/uploads/avatars/{unique_name}"
+                from app.utils import upload_image
+                current_user.avatar = upload_image(file, folder='taskhub/avatars')
         db.session.commit()
         flash('Profile updated!', 'success')
         return redirect(url_for('gigs.profile', user_id=current_user.id))
